@@ -63,6 +63,9 @@ class Php
 
 		ksort($output);
 
+		if(!file_exists(__DIR__.'/../../Versions/'))
+			mkdir(__DIR__.'/../../Versions/');
+
 		return file_put_contents(__DIR__.'/../../Versions/PHP-versions.json', json_encode($output));
 	}
 
