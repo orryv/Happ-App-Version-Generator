@@ -76,7 +76,13 @@ class Php
 	 */
 	public static function getPHPINIFiles()
 	{
-		$files = scandirc(__DIR__.'/../../Versions/phpini/');
+		if(!file_exists(__DIR__.'/../../Content/'))
+			mkdir(__DIR__.'/../../Content/');
+
+		if(!file_exists(__DIR__.'/../../Content/phpini/'))
+			mkdir(__DIR__.'/../../Content/phpini/');
+
+		$files = scandirc(__DIR__.'/../../Content/phpini/');
 		$versions = json_decode(file_get_contents(__DIR__.'/../../Versions/PHP-versions.json'), true);
 		$keys = array_keys($versions);
 		for($i = count($versions)-1; $i >=0; $i-- ){
@@ -106,22 +112,22 @@ class Php
 				
 			} else if(
 				file_exists(__DIR__.'/../../tmp/php.ini-recommended')
-				&& file_exists(__DIR__.'/../../tmp/phpini-dist')
+				&& file_exists(__DIR__.'/../../tmp/php.ini-dist')
 			){
 				$dev = __DIR__.'/../../tmp/php.ini-recommended';
-				$prod = __DIR__.'/../../tmp/phpini-dist';
+				$prod = __DIR__.'/../../tmp/php.ini-dist';
 			} else {
 				continue;
 			}
 				
-			if(file_exists($dev))
-				rename($dev, __DIR__.'/../../Versions/phpini/'.$keys[$i].'-development.ini');
-			else {
+			if(file_exists($dev)){
+				rename($dev, __DIR__.'/../../Content/phpini/'.$keys[$i].'-development.ini');
+			} else {
 				echo 'php.ini dev Not found.';
 				exit;
 			}
 			if(file_exists($prod)){
-				rename($prod, __DIR__.'/../../Versions/phpini/'.$keys[$i].'-production.ini');
+				rename($prod, __DIR__.'/../../Content/phpini/'.$keys[$i].'-production.ini');
 				self::deleteFolder(__DIR__.'/../../tmp/');
 			} else {
 				echo 'php.ini prod Not found.';
@@ -133,7 +139,7 @@ class Php
 
 	public static function createPHPINIFile()
 	{
-		$dirs = scandirc(__DIR__.'/../../Versions/phpini/');
+		$dirs = scandirc(__DIR__.'/../../Content/phpini/');
 		$sorted_dir = [];
 		foreach($dirs as $dir){
 			$version = strstr2($dir, '-', true);
@@ -149,7 +155,7 @@ class Php
 		
 		$ini_data = [];
 		foreach($sorted_dir as $dir){
-			$file = file_get_contents(__DIR__.'/../../Versions/phpini/'.$dir);
+			$file = file_get_contents(__DIR__.'/../../Content/phpini/'.$dir);
 			$lines = explode("\n", $file);
 
 			// Strip lines
@@ -223,8 +229,28 @@ class Php
 
 
 	/**
+	 * Delete all files in folder recursively
+	 */
+	public static function deleteFolder($dir)
+	{
+		if(!file_exists($dir))
+			return;
+		$files = scandir($dir);
+		foreach($files as $file){
+			if($file == '.' || $file == '..')
+				continue;
+			if(is_dir($dir.'/'.$file))
+				self::deleteFolder($dir.'/'.$file);
+			else
+				unlink($dir.'/'.$file);
+		}
+		rmdir($dir);
+	}
+
+	/**
 	 * delete all contents in folder
 	 */
+	/*
 	public static function deleteFolder($path)
 	{
 		$files = glob($path . '/*');
@@ -236,6 +262,7 @@ class Php
 		}
 		rmdir($path);
 	}
+	*/
 
 	/**
 	 * unzip file

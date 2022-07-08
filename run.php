@@ -10,8 +10,8 @@
 	require __DIR__.'/vendor/autoload.php';
 
 	echo 'Loading PHP Versions...'."\r\n";
-	// Php::getVersions();
-	// Php::getPHPINIFiles();
+	Php::getVersions();
+	Php::getPHPINIFiles();
 	Php::createPHPINIFile();
 
 	echo 'Loading MySQL Versions...'."\r\n";
