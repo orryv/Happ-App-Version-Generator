@@ -113,4 +113,55 @@ class Http
             : false;
     }
 
+    /**
+     * Download a file with curl, set the headers so the server thinks we are downloading it manually,
+     * and save the file in the given path.
+     */
+    public static function download($url, $path)
+    {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36');
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+        curl_setopt($ch, CURLOPT_ENCODING, '');
+        curl_setopt($ch, CURLOPT_AUTOREFERER, true);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 120);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 120);
+        curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Cache-Control: max-age=0',
+            'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+            'Accept-Encoding: gzip, deflate, br',
+            'Accept-Language: nl-NL,nl;q=0.9',
+            'Sec-Ch-UA: " Not A;Brand";v="99", "Chromium";v="99", "Google Chrome";v="99"',
+            'Sec-Ch-UA-Mobile: ?0',
+            'Sec-Ch-UA-Platform: "Windows"',
+            'Sec-Fetch-Dest: document',
+            'Sec-Fetch-Mode: navigate',
+            'Sec-Fetch-Site: none',
+            'Sec-Fetch-User: ?1',
+            'Upgrade-Insecure-Requests: 1',
+            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36'
+        ));
+        $file = curl_exec($ch);
+        $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        $header = substr($file, 0, $header_size);
+        $body = substr($file, $header_size);
+        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if($httpcode == 200){
+            $fp = fopen($path, 'w');
+            fwrite($fp, $body);
+            fclose($fp);
+            return true;
+        } else {
+            return false;
+        }
+
+    }
+
 }
