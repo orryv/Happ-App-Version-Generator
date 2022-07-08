@@ -115,16 +115,16 @@ class Mysql
 		];
 
 
-		if(!file_exists(__DIR__.'/../../Versions/Apache/'))
-			mkdir(__DIR__.'/../../Versions/Apache/');
+		if(!file_exists(__DIR__.'/../../Happ-App-Versions/Apache/'))
+			mkdir(__DIR__.'/../../Happ-App-Versions/Apache/');
 		foreach ($versions as $key => $value) {
-			file_put_contents(__DIR__.'/../../Versions/Apache/'.$value, file_get_contents('https://de.apachehaus.com/downloads/'.$value));
+			file_put_contents(__DIR__.'/../../Happ-App-Versions/Apache/'.$value, file_get_contents('https://de.apachehaus.com/downloads/'.$value));
 		}
 
-		if(!file_exists(__DIR__.'/../../Versions/Apache-Mods/'))
-			mkdir(__DIR__.'/../../Versions/Apache-Mods/');
+		if(!file_exists(__DIR__.'/../../Happ-App-Versions/Apache-Mods/'))
+			mkdir(__DIR__.'/../../Happ-App-Versions/Apache-Mods/');
 		foreach ($mods as $key => $value) {
-			file_put_contents(__DIR__.'/../../Versions/Apache-Mods/'.$value, file_get_contents('https://de.apachehaus.com/downloads/'.$value));
+			file_put_contents(__DIR__.'/../../Happ-App-Versions/Apache-Mods/'.$value, file_get_contents('https://de.apachehaus.com/downloads/'.$value));
 		}
 
 
@@ -241,7 +241,7 @@ class Mysql
 		}
 
 
-		return file_put_contents(__DIR__.'/../../Versions/Apache-versions.json', json_encode($urls));
+		return file_put_contents(__DIR__.'/../../Happ-App-Versions/Apache-versions.json', json_encode($urls));
 
 		print_r($urls);
 	}

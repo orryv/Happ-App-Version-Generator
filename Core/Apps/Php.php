@@ -51,10 +51,13 @@ class Php
 
 		ksort($output);
 
-		if(!file_exists(__DIR__.'/../../Versions/'))
-			mkdir(__DIR__.'/../../Versions/');
+		if(!file_exists(__DIR__.'/../../Happ-App-Versions/'))
+			mkdir(__DIR__.'/../../Happ-App-Versions/');
 
-		return file_put_contents(__DIR__.'/../../Versions/PHP-versions.json', json_encode($output));
+		if(!file_exists(__DIR__.'/../../Happ-App-Versions/PHP/'))
+			mkdir(__DIR__.'/../../Happ-App-Versions/PHP/');
+
+		return file_put_contents(__DIR__.'/../../Happ-App-Versions/PHP/PHP-versions.json', json_encode($output));
 	}
 
 	public static function getIndexUrls($src, $url)
@@ -83,7 +86,7 @@ class Php
 			mkdir(__DIR__.'/../../Content/phpini/');
 
 		$files = scandirc(__DIR__.'/../../Content/phpini/');
-		$versions = json_decode(file_get_contents(__DIR__.'/../../Versions/PHP-versions.json'), true);
+		$versions = json_decode(file_get_contents(__DIR__.'/../../Happ-App-Versions/PHP/PHP-versions.json'), true);
 		$keys = array_keys($versions);
 		for($i = count($versions)-1; $i >=0; $i-- ){
 			
@@ -153,7 +156,9 @@ class Php
 		// Sort $sorted_dir by key
 		ksort($sorted_dir);
 		
+		$latest_version = false;
 		$ini_data = [];
+		$compact_file = [];
 		foreach($sorted_dir as $dir){
 			$file = file_get_contents(__DIR__.'/../../Content/phpini/'.$dir);
 			$lines = explode("\n", $file);
@@ -178,20 +183,31 @@ class Php
 
 			$full_version = substr($dir, 0, strrpos($dir, '-'));
 			$version = strstr2($dir, '-', true);
-
+			$latest_version = $version;
+			$current_option_list = [];
+			$local_option_list = [];
 			foreach($lines as $i => $line){
 				$commented = false;
 				if(substr($line, 0, 1) === ';')
 					$commented = true;
 
-				$data = explode('=', $line);
+				$data[0] = strstr($line, '=', true);
+				$data[1] = substr($line, strpos($line, '=')+1);
 
 				if(!isset($data[1])){
 					continue;
 				}
 
 
+
+
 				$option = trim(str_replace(';', '', $data[0]));
+
+				if(in_array($option, $local_option_list))
+					continue;
+				$local_option_list[] = $option;
+
+				$current_option_list[] = $option;
 
 				$ini_data[$option][$version][$full_version] = [
 					'v' => trim($data[1]),
@@ -199,15 +215,140 @@ class Php
 				];
 			}
 
+			$local_option_list = [];
+			foreach($lines as $line){
 
-			
+				
+
+				$data[0] = strstr($line, '=', true);
+				$data[1] = substr($line, strpos($line, '=')+1);
+
+				if(!isset($data[1])){
+					continue;
+				}
+
+				$option = trim(str_replace(';', '', $data[0]));
+
+				if(in_array($option, $local_option_list))
+					continue;
+				$local_option_list[] = $option;
+
+				$commented = false;
+				if(substr($line, 0, 1) === ';')
+					$commented = true;
+
+
+				if(!isset($compact_file[$option])){
+					$compact_file[$option] =[
+						'versions' => [
+							0 => [
+								'from' => $version,
+								'to' => false
+							],
+						],
+						'default' => [
+							0 => [
+								'value' => trim($data[1]),
+								'from' => $version,
+								'to' => false,
+								'end' => false
+							],
+						],
+						'commented' => [
+							0 => [
+								'value' => $commented,
+								'from' => $version,
+								'to' => false,
+								'end' => false
+							],
+						]
+					];
+				} else {
+					$cnt = count($compact_file[$option]['versions']);
+					// if(!isset($compact_file[$option]['versions'][$cnt-1]['to'])){
+					// 	echo $cnt.'--';
+					// 	print_r($compact_file[$option]['versions']);
+					// 	exit;
+					// }
+					if($compact_file[$option]['versions'][$cnt-1]['to'] !== false){
+						$compact_file[$option]['versions'][$cnt] = [
+							'from' => $version,
+							'to' => false
+						];
+					}
+
+					$cnt = count($compact_file[$option]['default']);
+					if(
+						$compact_file[$option]['default'][$cnt-1]['value'] !== trim($data[1])
+						|| $compact_file[$option]['default'][$cnt-1]['end'] === true
+					){
+						$compact_file[$option]['default'][$cnt] = [
+							'from' => $version,
+							'to' => false,
+							'value' => trim($data[1]),
+							'end' => false
+						];
+					} else {
+						$compact_file[$option]['default'][$cnt-1]['to'] = $version;
+					}
+					$cnt = count($compact_file[$option]['commented']);
+
+					if(
+						$compact_file[$option]['commented'][$cnt-1]['value'] !== $commented
+						|| $compact_file[$option]['commented'][$cnt-1]['end'] === true
+					){
+						$compact_file[$option]['commented'][$cnt] = [
+							'from' => $version,
+							'to' => false,
+							'value' => $commented,
+							'end' => false
+						];
+					} else {
+						$compact_file[$option]['commented'][$cnt-1]['to'] = $version;
+						
+					}
+
+				}
+
+				// loop over already set lines
+				foreach($compact_file as $opt => $v){
+					$cnt = count($compact_file[$opt]['versions']);
+					if(
+						!in_array($opt, $current_option_list)
+						&& $compact_file[$opt]['versions'][$cnt-1]['to'] === false
+					){						
+						$compact_file[$opt]['versions'][$cnt-1]['to'] = $version;
+						$compact_file[$opt]['default'][$cnt-1]['end'] = true;
+						$compact_file[$opt]['commented'][$cnt-1]['end'] = true;
+					}
+				}
+			}
+			echo '.';
 		}
 
-		file_put_contents(__DIR__.'/../../Versions/php.ini.json', json_encode($ini_data));
+		foreach($compact_file as $k => $v){
+			foreach($v as $kk => $vv){
+				foreach($vv as $kkk => $vvv){
+					if(isset($vvv['end']))
+						unset($compact_file[$k][$kk][$kkk]['end']);
+					if($vvv['to'] === false || $vvv['to'] == $latest_version)
+						unset($compact_file[$k][$kk][$kkk]['to']);
+					if(isset($vvv['value']) && $vvv['value'] === false || empty($vvv['value']))
+						unset($compact_file[$k][$kk][$kkk]['value']);
+				}
+			}
+		}
 
-		print_r($ini_data);
+		if(!file_exists(__DIR__.'/../../Happ-App-Versions/'))
+			mkdir(__DIR__.'/../../Happ-App-Versions/');
 
-		exit;
+		if(!file_exists(__DIR__.'/../../Happ-App-Versions/PHP/'))
+			mkdir(__DIR__.'/../../Happ-App-Versions/PHP/');
+
+		file_put_contents(__DIR__.'/../../Happ-App-Versions/PHP/php.ini-compact.json', json_encode($compact_file));
+		file_put_contents(__DIR__.'/../../Happ-App-Versions/PHP/php.ini.json', json_encode($ini_data));
+
+		echo 'DONE!';
 
 	}
 
